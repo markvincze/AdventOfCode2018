@@ -1,7 +1,7 @@
 open System
 open System.IO
 
-let changes = File.ReadAllLines("01-chronal-input.txt")
+let changes = File.ReadAllLines("FSharp/01-chronal-input.txt")
               |> Array.map Int32.Parse
               |> List.ofArray
 
