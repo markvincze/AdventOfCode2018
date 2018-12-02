@@ -4,30 +4,19 @@ open System.IO
 let ids = File.ReadAllLines("FSharp/02-inventory-input.txt")
 
 // Part 1
-type CountsFor =
-| Neither
-| Twos
-| Threes
-| Both
+let counts ids =
+    let rec countsRec ids twos threes =
+        match ids with
+        | [] -> (twos, threes)
+        | h :: t -> let chars = Seq.fold (fun occ c -> Map.add c (Map.tryFind c occ |> Option.fold (fun _ v -> v + 1) 1) occ)
+                                         Map.empty<char, int>
+                                         h
+                    countsRec t
+                              (if Map.exists (fun _ v -> v = 2) chars then twos + 1 else twos)
+                              (if Map.exists (fun _ v -> v = 3) chars then threes + 1 else threes)
+    countsRec (Array.toList ids) 0 0
 
-let countsFor (str : string) =
-    let occurrences = Seq.fold
-                          (fun occ c -> Map.add c (Map.tryFind c occ |> Option.fold (fun _ v -> v + 1) 1) occ)
-                          Map.empty<char, int>
-                          str
-
-    let hasTwo = Map.exists (fun _ v -> v = 2) occurrences
-    let hasThree = Map.exists (fun _ v -> v = 3) occurrences
-    match (hasTwo, hasThree) with
-    | (true, true) -> Both
-    | (true, false) -> Twos
-    | (false, true) -> Threes
-    | (false, false) -> Neither
-
-let counts = ids |> Array.map countsFor
-
-let twos = counts |> Array.filter (fun i -> i = Twos || i = Both) |> Array.length
-let threes = counts |> Array.filter (fun i -> i = Threes || i = Both) |> Array.length
+let twos, threes = counts ids
 
 let result1 = twos * threes
 
