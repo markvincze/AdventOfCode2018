@@ -1,3 +1,4 @@
+open System
 open System.IO
 
 let ids = File.ReadAllLines("FSharp/02-inventory-input.txt")
@@ -32,10 +33,15 @@ let result1 = twos * threes
 
 // Part 2
 let countDiffs id1 id2 =
-    Seq.fold2 (fun diff c1 c2 -> if c1 = c2 then diff else diff + 1) 0 id1 id2
+    Seq.zip id1 id2
+    |> Seq.filter (fun (c1, c2) -> c1 <> c2)
+    |> Seq.length
 
-let commonPart id1 id2 =
-    Seq.fold2 (fun acc c1 c2 -> if c1 = c2 then acc + (string c1) else acc) "" id1 id2
+let commonPart (id1 : string) (id2 : string) =
+    Seq.zip id1 id2
+    |> Seq.filter (fun (c1, c2) -> c1 = c2)
+    |> Seq.map fst
+    |> String.Concat
 
 let findSolution ids =
     ids |> Array.pick (fun id -> ids
