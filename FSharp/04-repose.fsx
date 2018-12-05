@@ -3,7 +3,7 @@ open System.IO
 open System.Text.RegularExpressions
 
 type LogEntry =
-| BeginShift of int
+| BeginsShift of int
 | FallsAsleep
 | WakesUp
 
@@ -24,7 +24,7 @@ let parseLine line = let rm = logLineRegex.Match line
                          Entry = match rm.Groups.[2].Value with 
                                  | "falls asleep" -> FallsAsleep
                                  | "wakes up" -> WakesUp
-                                 | s -> BeginShift (Regex.Match(s, "Guard #(\\d+) begins shift").Groups.[1].Value |> Int32.Parse)
+                                 | s -> BeginsShift (Regex.Match(s, "Guard #(\\d+) begins shift").Groups.[1].Value |> Int32.Parse)
                      }
 
 let logLines = File.ReadAllLines("FSharp/04-repose-input.txt")
@@ -50,16 +50,16 @@ let collectStats logLines =
                     | FallsAsleep -> collectStatsRec t stats currentHour guardId h.Timestamp.Minute
                     | WakesUp -> markSleep currentHour fellAsleepMinute (h.Timestamp.Minute - 1)
                                  collectStatsRec t stats currentHour guardId fellAsleepMinute
-                    | BeginShift id -> let newStats = match Map.tryFind guardId stats with
-                                                      | None -> Map.add guardId [ currentHour ] stats
-                                                      | Some gs -> Map.add guardId ( currentHour :: gs ) stats
-                                       collectStatsRec t newStats (Array.create 60 false) id 0
+                    | BeginsShift id -> let newStats = match Map.tryFind guardId stats with
+                                                       | None -> Map.add guardId [ currentHour ] stats
+                                                       | Some gs -> Map.add guardId ( currentHour :: gs ) stats
+                                        collectStatsRec t newStats (Array.create 60 false) id 0
 
     match logLines with
     | firstEntry :: rest ->
         match firstEntry.Entry with
-        | BeginShift id -> collectStatsRec rest Map.empty<int, GuardStats> (Array.create 60 false) id 0
-        | _ -> failwith "Log has to start with BeginShift"
+        | BeginsShift id -> collectStatsRec rest Map.empty<int, GuardStats> (Array.create 60 false) id 0
+        | _ -> failwith "Log has to start with BeginsShift"
     | _ -> failwith "Not enought log lines"
 
 let stats = collectStats logLines
@@ -75,8 +75,7 @@ let laziestGuardId, laziestGuardStats =
 let findMostSleptMinute (guardStats : GuardStats) =
     [ 0..59 ]
     |> Seq.sortByDescending (fun minute -> guardStats
-                                           |> List.map (fun hour -> hour.[minute])
-                                           |> List.filter id
+                                           |> List.filter (fun hour -> hour.[minute])
                                            |> List.length)
     |> Seq.head
 let mostSleptMinute = findMostSleptMinute laziestGuardStats
@@ -90,8 +89,7 @@ let (guardId, sleepiestMinute, sleepCount) =
     |> List.map (fun (guardId, guardStats) -> let sleepiestMinute, sleepCount =
                                                   [ 0..59 ]
                                                   |> Seq.map (fun minute -> let sleepCount = guardStats
-                                                                                             |> List.map (fun hour -> (hour.[minute]))
-                                                                                             |> List.filter id
+                                                                                             |> List.filter (fun hour -> (hour.[minute]))
                                                                                              |> List.length
                                                                             (minute, sleepCount))
                                                   |> Seq.sortByDescending snd

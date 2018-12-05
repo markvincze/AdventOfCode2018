@@ -3,9 +3,10 @@ extern crate regex;
 mod chronal01;
 mod inventory02;
 mod fabric03;
+mod repose04;
 
 fn main() {
-    let day = 3;
+    let day = 4;
 
     match day {
         1 => {
@@ -18,6 +19,9 @@ fn main() {
         }
         3 => {
             fabric03::fabric();
+        }
+        4 => {
+            repose04::repose();
         }
         _ => println!("Not done yet :)"),
     }
