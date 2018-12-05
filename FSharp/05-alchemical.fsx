@@ -10,7 +10,7 @@ let units = File.ReadAllText("FSharp/05-alchemical-input.txt")
 // let unitsSmall4 = "abcCdefghijJklL" |> Seq.toList
 let unitsSmall5 = "TgGtfFoO" |> Seq.toList
 // let unitsSmall5 = "rpSsrRAaPgGTgGtfFoOUuRqQFhQqvVcCHzZJvbBVYydDjKkquUtTQLzZlIvVPlLOopLEelWSswzZdDbBLAPqQpaiIlOmkKeQqNnQ" |> Seq.toList
-// let unitsSmall6 = "rpSsrRAaPgGTgGtfFoOUuRqQFhQqvVcCHzZJvbBVYydDjKkquUtTQLzZlIvVPlLOopLEelWSswzZdDbBLAPqQpaiIlOmkKeQqNnQgGzZqEJjgeDdEcCSsyYpfFPSsAzZMmhHwWmMTtaKAakAkiIKfFLWwljJzZIifFaGMHZzswWdrRDSptTNnfFRXxrxXPIwWibBeGeQ" |> Seq.toList
+let unitsSmall6 = "rpSsrRAaPgGTgGtfFoOUuRqQFhQqvVcCHzZJvbBVYydDjKkquUtTQLzZlIvVPlLOopLEelWSswzZdDbBLAPqQpaiIlOmkKeQqNnQgGzZqEJjgeDdEcCSsyYpfFPSsAzZMmhHwWmMTtaKAakAkiIKfFLWwljJzZIifFaGMHZzswWdrRDSptTNnfFRXxrxXPIwWibBeGeQ" |> Seq.toList
 
 
 // Part 1
@@ -19,39 +19,39 @@ let opposite unit =
     then unit |> Char.ToUpper
     else unit |> Char.ToLower
 
-// let rec triggerOnce units =
-//     match units with
-//     | [] -> [], false
-//     | first :: t -> match t with
-//                     | [] -> (units, false)
-//                     | second :: rest -> if first = (opposite second)
-//                                         then (rest, true)
-//                                         else let result, triggered = triggerOnce t
-//                                              first :: result, triggered
+let rec triggerOnce units =
+    match units with
+    | [] -> [], false
+    | first :: t -> match t with
+                    | [] -> (units, false)
+                    | second :: rest -> if first = (opposite second)
+                                        then (rest, true)
+                                        else let result, triggered = triggerOnce t
+                                             first :: result, triggered
 
 // let mutable reccnt = 0
 
-let rec trigger units =
+let rec trigger hadTrigger units =
     // reccnt <- reccnt + 1
     // printfn "%s" (new String(units |> Array.ofList))
     match units with
     | [] -> [], false
     | [ _ ] -> units, false
     | first :: (second :: rest) -> if first = (opposite second)
-                                   then (trigger rest |> fst, true)
-                                   else let result, triggered = trigger (second :: rest)
+                                   then trigger true rest
+                                   else let result, triggered = trigger hadTrigger (second :: rest)
                                         if triggered
-                                        then trigger (first :: result)
-                                        else first :: result, false
+                                        then trigger triggered (first :: result)
+                                        else first :: result, (triggered || hadTrigger)
 
 
-// let rec processUnits units =
-//     match triggerOnce units with
-//     | newUnits, true -> processUnits newUnits
-//     | newUnits, false -> newUnits
+let rec processUnits units =
+    match triggerOnce units with
+    | newUnits, true -> processUnits newUnits
+    | newUnits, false -> newUnits
 
-// let result1_old = processUnits unitsSmall5
-//                   |> List.length
+let result1_old = processUnits unitsSmall6
+                  |> List.length
 
 // let result1 = trigger units
 //               |> fst
@@ -63,8 +63,8 @@ let rec trigger units =
 // let resultSmall4 = trigger unitsSmall4
                 //    |> fst
                 //    |> List.length
-let resultSmall5 = trigger unitsSmall5 |> fst |> List.length
-let resultSmall = trigger units |> fst |> List.length
+let resultSmall5 = trigger false unitsSmall6 |> fst |> List.length
+// let resultSmall = trigger false units |> fst |> List.length
 // let resultSmall6 = trigger unitsSmall6 |> fst |> List.length
 
 
@@ -79,9 +79,9 @@ let withoutUnit units unit = units |> List.filter (fun u -> u <> unit && (opposi
 //                                     |> List.length)
 //               |> List.min
 
-let result2 = unitTypes
-              |> List.map (fun u -> withoutUnit units u
-                                    |> trigger
-                                    |> fst
-                                    |> List.length)
-              |> List.min
+// let result2 = unitTypes
+//               |> List.map (fun u -> withoutUnit units u
+//                                     |> trigger false
+//                                     |> fst
+//                                     |> List.length)
+//               |> List.min
