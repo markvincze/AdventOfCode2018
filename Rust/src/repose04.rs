@@ -64,6 +64,7 @@ fn read_loglines() -> std::vec::Vec<LogLine> {
 pub fn repose() {
     let mut loglines = read_loglines();
 
+    // Part 1
     loglines.sort_by(|a, b| {
         if a.timestamp.month > b.timestamp.month
             || a.timestamp.month == b.timestamp.month && a.timestamp.day > b.timestamp.day
@@ -118,13 +119,11 @@ pub fn repose() {
 
     let (laziest_guard_id, laziest_guard_hours) = stats
         .iter()
-        .max_by_key(|(_, hours)| {
-            let total_minutes_asleep: usize = hours
+        .max_by_key::<i32, _>(|(_, hours)| {
+            hours
                 .iter()
-                .map(|hour| hour.iter().filter(|x| **x).count())
-                .sum();
-
-            total_minutes_asleep as i32
+                .map(|hour| hour.iter().filter(|x| **x).count() as i32)
+                .sum()
         }).unwrap();
 
     let most_slept_minute = (0..60)
@@ -138,10 +137,40 @@ pub fn repose() {
     let result1 = *laziest_guard_id * most_slept_minute as i32;
 
     println!("Part 1 result: {}", result1);
+
+    // Part 2
+    let extra_collection = stats
+        .iter()
+        .map(|(id, hours)| {
+            let (sleepiest_minute, sleep_count) = get_sleepiest_minute_and_sleep_count(hours);
+            (*id, sleepiest_minute, sleep_count)
+        }).collect::<Vec<(i32, i32, i32)>>();
+
+    let (guard_id, sleepiest_minute, _) = extra_collection.iter()
+        .max_by_key(|(_, _, sleep_count)| sleep_count)
+        .unwrap();
+
+    let result2 = guard_id * sleepiest_minute;
+
+    println!("Part 2 result: {}", result2);
 }
 
 fn mark_sleep(hour: &mut [bool; 60], from: usize, to: usize) {
     for i in from..to {
         hour[i] = true;
     }
+}
+
+fn get_sleepiest_minute_and_sleep_count(hours: &Vec<[bool; 60]>) -> (i32, i32) {
+    let range_vec: std::vec::Vec<i32> = (0..60).collect();
+
+    *range_vec
+        .iter()
+        .map(|minute| {
+            let sleep_count = hours.iter().filter(|hour| hour[*minute as usize]).count();
+            (*minute, sleep_count as i32)
+        }).collect::<Vec<(i32, i32)>>()
+        .iter()
+        .max_by_key(|(_, sleep_count3)| sleep_count3)
+        .unwrap()
 }
