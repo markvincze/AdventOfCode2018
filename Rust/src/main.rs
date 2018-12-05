@@ -4,9 +4,10 @@ mod chronal01;
 mod inventory02;
 mod fabric03;
 mod repose04;
+mod alchemical05;
 
 fn main() {
-    let day = 4;
+    let day = 5;
 
     match day {
         1 => {
@@ -22,6 +23,9 @@ fn main() {
         }
         4 => {
             repose04::repose();
+        }
+        5 => {
+            alchemical05::alchemical();
         }
         _ => println!("Not done yet :)"),
     }
