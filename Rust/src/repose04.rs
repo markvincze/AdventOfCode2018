@@ -162,13 +162,10 @@ fn mark_sleep(hour: &mut [bool; 60], from: usize, to: usize) {
 }
 
 fn get_sleepiest_minute_and_sleep_count(hours: &Vec<[bool; 60]>) -> (i32, i32) {
-    let range_vec: std::vec::Vec<i32> = (0..60).collect();
-
-    *range_vec
-        .iter()
+    *(0..60)
         .map(|minute| {
-            let sleep_count = hours.iter().filter(|hour| hour[*minute as usize]).count();
-            (*minute, sleep_count as i32)
+            let sleep_count = hours.iter().filter(|hour| hour[minute as usize]).count();
+            (minute, sleep_count as i32)
         }).collect::<Vec<(i32, i32)>>()
         .iter()
         .max_by_key(|(_, sleep_count3)| sleep_count3)
