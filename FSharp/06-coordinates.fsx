@@ -78,3 +78,12 @@ let result1 =
                            |> List.length)
     |> Array.max
 
+// Part 2
+let totalDistances =
+    [ for x = 0 to width - 1 do
+        for y = 0 to height - 1 do
+          yield (x, y) ]
+    |> List.map (fun c1 -> coords
+                           |> Array.sumBy (fun c2 -> manhattan c1 c2))
+
+let result2 = totalDistances |> List.filter (fun d -> d < 10000) |> List.length
