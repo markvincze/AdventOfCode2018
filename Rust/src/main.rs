@@ -5,9 +5,10 @@ mod inventory02;
 mod fabric03;
 mod repose04;
 mod alchemical05;
+mod coordinates06;
 
 fn main() {
-    let day = 5;
+    let day = 6;
 
     match day {
         1 => {
@@ -26,6 +27,9 @@ fn main() {
         }
         5 => {
             alchemical05::alchemical();
+        }
+        6 => {
+            coordinates06::coordinates();
         }
         _ => println!("Not done yet :)"),
     }
