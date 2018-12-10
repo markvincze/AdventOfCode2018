@@ -6,9 +6,10 @@ mod fabric03;
 mod repose04;
 mod alchemical05;
 mod coordinates06;
+mod sleigh07;
 
 fn main() {
-    let day = 6;
+    let day = 7;
 
     match day {
         1 => {
@@ -30,6 +31,9 @@ fn main() {
         }
         6 => {
             coordinates06::coordinates();
+        }
+        7 => {
+            sleigh07::sleigh();
         }
         _ => println!("Not done yet :)"),
     }
