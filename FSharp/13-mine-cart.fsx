@@ -138,7 +138,6 @@ let arrive cart at moveIter =
                                            }
 
 let rec progressUntilCrash (map : Tile[,]) iter =
-    // printMap map
     let mutable firstCrash : (int * int) option = None
 
     for y in 0..(mapHeight - 1) do
@@ -149,16 +148,33 @@ let rec progressUntilCrash (map : Tile[,]) iter =
                              else let xn, yn = move c.Direction (x, y)
                                   map.[x,y] <- Track t
                                   match map.[xn, yn] with
-                                  | Cart _ -> match firstCrash with
-                                              | None -> firstCrash <- Some (xn, yn)
-                                              | Some _ -> ()
+                                  | Cart (cn, tn) -> match firstCrash with
+                                                     | None -> firstCrash <- Some (xn, yn)
+                                                     | Some _ -> ()
+
+                                                     map.[xn, yn] <- Track tn
                                   | Empty -> failwith "Bug: the cart moved to an empty tile"
                                   | Track tn -> let newCart = arrive c tn iter
                                                 map.[xn,yn] <- Cart (newCart, tn)
             | _ -> ()
-    // firstCrash
-    match firstCrash with
-    | None -> progressUntilCrash map (iter + 1)
-    | Some crash -> crash
 
-let firstCrashPos = progressUntilCrash map 0
+    let carts =
+        [ for y in 0..(mapHeight - 1) do
+            for x in 0..(mapWidth - 1) do
+                yield (x, y) ]
+        |> Seq.map (fun (x, y) -> map.[x, y], x, y)
+        |> Seq.filter (fun (t, _, _) -> match t with
+                                        | Cart _ -> true
+                                        | _ -> false)
+
+    let cartCount = Seq.length carts 
+    match cartCount with
+    | 1 -> carts |> Seq.head
+    | _ -> progressUntilCrash map (iter + 1)
+
+    // match firstCrash with
+    // | None -> progressUntilCrash map (iter + 1)
+    // | Some crash -> crash
+
+// let firstCrashPos = progressUntilCrash map 0
+let lastStanding = progressUntilCrash map 0
