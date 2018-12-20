@@ -63,16 +63,6 @@ let getAdjTarget (map : Tile[,]) (x, y) selector =
     |> List.sortBy (fun (x, y) -> map.[x, y] |> getHealth)
     |> List.tryHead
 
-let attack target =
-    match target with
-    | Goblin unit | Elf unit -> let newHealth = unit.Health - 3
-                                if newHealth > 0
-                                then match target with
-                                     | Elf unit -> Elf { unit with Health = newHealth }
-                                     | Goblin unit -> Goblin { unit with Health = newHealth }
-                                else Empty
-    | _ -> failwith "Can't attack this tile"
-
 let findTargets (map : Tile[,]) selector =
     [ for x in 0..mapWidth - 1 do
         for y in 0..mapHeight - 1 do
@@ -135,16 +125,34 @@ let move map (x, y) enemySelector =
     |> List.map snd
     |> List.tryHead
 
-let tryAttack (map : Tile[,]) (x, y) enemySelector =
+type AttackResult =
+| CouldNotAttack
+| Attacked
+| ElfDied
+
+let attack attackPower target =
+    match target with
+    | Goblin unit | Elf unit -> let newHealth = unit.Health - attackPower
+                                if newHealth > 0
+                                then match target with
+                                     | Elf unit -> Elf { unit with Health = newHealth }
+                                     | Goblin unit -> Goblin { unit with Health = newHealth }
+                                else Empty
+    | _ -> failwith "Can't attack this tile"
+
+let tryAttack (map : Tile[,]) (x, y) enemySelector attackPower =
     let adjTarget = getAdjTarget map (x, y) enemySelector
     match adjTarget with
     | Some (tx, ty) -> let target = map.[tx, ty]
-                       map.[tx, ty] <- attack target
-                       true
-    | None -> false
+                       map.[tx, ty] <- attack attackPower target
+                       match target, map.[tx, ty] with
+                       | Elf _, Empty -> ElfDied
+                       | _ -> Attacked
+    | None -> CouldNotAttack
 
-let progress (map : Tile[,]) round =
+let progress (map : Tile[,]) round elfAttackPower =
     let mutable noEnemyLeft = false
+    let mutable elfDied = false
 
     for y in 0..mapHeight - 1 do
         for x in 0..mapWidth - 1 do
@@ -159,29 +167,44 @@ let progress (map : Tile[,]) round =
                 then noEnemyLeft <- true
                 else ()
 
-                if tryAttack map (x, y) enemySelector
-                then match tile with
-                     | Elf unit -> map.[x, y] <- Elf { unit with MovedInRound = round}
-                     | Goblin unit -> map.[x, y] <- Goblin { unit with MovedInRound = round}
-                else let newPos = move map (x, y) enemySelector
-                     match newPos with
-                     | Some (xn, yn) -> map.[x, y] <- Empty
-                                        match tile with
-                                        | Elf unit -> map.[xn, yn] <- Elf { unit with MovedInRound = round }
-                                        | Goblin unit ->  map.[xn, yn] <- Goblin { unit with MovedInRound = round }
-                                        tryAttack map (xn, yn) enemySelector |> ignore
-                     | None -> ()
+                let attackPower = match tile with | Elf _ -> elfAttackPower | Goblin _ -> 3
+
+                match tryAttack map (x, y) enemySelector attackPower with
+                | ElfDied -> elfDied <- true
+                | Attacked -> match tile with
+                              | Elf unit -> map.[x, y] <- Elf { unit with MovedInRound = round}
+                              | Goblin unit -> map.[x, y] <- Goblin { unit with MovedInRound = round}
+                | CouldNotAttack -> let newPos = move map (x, y) enemySelector
+                                    match newPos with
+                                    | Some (xn, yn) -> map.[x, y] <- Empty
+                                                       match tile with
+                                                       | Elf unit -> map.[xn, yn] <- Elf { unit with MovedInRound = round }
+                                                       | Goblin unit ->  map.[xn, yn] <- Goblin { unit with MovedInRound = round }
+                                                       tryAttack map (xn, yn) enemySelector attackPower |> ignore
+                                    | None -> ()
             | _ -> ()
 
-    map, noEnemyLeft
+    map, noEnemyLeft, elfDied
     // printMap map, actionHappened
 
-let rec progressUntilEnd map round =
-    let map, noEnemyLeft = progress map round
+let rec progressUntilEnd map round attackPower =
+    let map, noEnemyLeft, elfDied = progress map round attackPower
 
-    match noEnemyLeft with
-    | true -> round - 1
-    | false ->  progressUntilEnd map (round + 1)
+    match noEnemyLeft, elfDied with
+    | false, false -> progressUntilEnd map (round + 1) attackPower
+    | _, true -> false, round - 1
+    | true, false -> true, round - 1
+
+let findMinimumEnoughAttackPower map =
+    let originalMap = Array2D.copy map
+    let rec findMinimumEnoughAttackPowerRec map attackPower =
+        match progressUntilEnd map 1 attackPower with
+        | false, _ -> 
+            let map = Array2D.copy originalMap
+            findMinimumEnoughAttackPowerRec map (attackPower + 1)
+        | true, gameLength -> gameLength, attackPower, map
+    
+    findMinimumEnoughAttackPowerRec map 4
 
 let allHealth (map : Tile[,]) =
     [ for x in 0..mapWidth-1 do
@@ -189,6 +212,7 @@ let allHealth (map : Tile[,]) =
             yield (x, y)]
     |> Seq.sumBy (fun (x, y) -> match map.[x, y] with | Elf unit | Goblin unit -> unit.Health | _ -> 0)
 
-let gameLength = progressUntilEnd map 1
-let totalHealth = allHealth map
-let result1 = gameLength * totalHealth
+// let gameLength = progressUntilEnd map 1
+let gameLength, attackPower, endMap = findMinimumEnoughAttackPower map
+let totalHealth = allHealth endMap
+let result2 = gameLength * totalHealth

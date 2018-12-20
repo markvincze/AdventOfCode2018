@@ -92,26 +92,26 @@ fn build_cache(deps: std::vec::Vec<(char, char)>) -> Vec<Step> {
 
     cache
 
-        //if cache.contains_key(&b) {
-        //let step = cache.get_mut(&b).unwrap();
-        //step.deps.push(a);
-        //} else {
-        //cache.insert(
-        //b,
-        //Step {
-        //name: b,
-        //deps: vec![a],
-        //is_done: false
-        //});
-        //}
+    //if cache.contains_key(&b) {
+    //let step = cache.get_mut(&b).unwrap();
+    //step.deps.push(a);
+    //} else {
+    //cache.insert(
+    //b,
+    //Step {
+    //name: b,
+    //deps: vec![a],
+    //is_done: false
+    //});
+    //}
 
-        //if !cache.contains_key(&a) {
-        //cache.insert(a, Step {
-        //name: a,
-        //deps: Vec::new(),
-        //is_done: false
-        //});
-        //}
+    //if !cache.contains_key(&a) {
+    //cache.insert(a, Step {
+    //name: a,
+    //deps: Vec::new(),
+    //is_done: false
+    //});
+    //}
 }
 
 pub fn sleigh() {
@@ -119,14 +119,18 @@ pub fn sleigh() {
 
     let mut cache = build_cache(deps);
     let mut order = String::new();
-    
+
     loop {
         println!("Running iteration");
         let next_step = try_pick_next(&mut cache);
 
         match next_step {
-            Some(s) => { order.push(s); },
-            None => { break; }
+            Some(s) => {
+                order.push(s);
+            }
+            None => {
+                break;
+            }
         }
     }
 
@@ -138,11 +142,13 @@ fn try_pick_next(steps: &mut Vec<Step>) -> Option<char> {
 
     {
         steps.sort_by_key(|s| s.name);
-        match steps.iter()
-            .filter(|s| s.deps.len() == 0)
-            .nth(0) {
-            Some(n) => { next = Some(n.name); },
-            None => { next = None; }
+        match steps.iter().filter(|s| s.deps.len() == 0).nth(0) {
+            Some(n) => {
+                next = Some(n.name);
+            }
+            None => {
+                next = None;
+            }
         }
     }
 
@@ -150,12 +156,14 @@ fn try_pick_next(steps: &mut Vec<Step>) -> Option<char> {
         Some(n) => {
             for step in steps.iter_mut() {
                 match step.deps.iter().position(|d| *d == n) {
-                    Some(pos) => { step.deps.remove(pos); },
-                    None => ()
+                    Some(pos) => {
+                        step.deps.remove(pos);
+                    }
+                    None => (),
                 }
             }
-        },
-        None => ()
+        }
+        None => (),
     }
 
     match next {
@@ -163,7 +171,7 @@ fn try_pick_next(steps: &mut Vec<Step>) -> Option<char> {
             let pos = steps.iter().position(|s| s.name == n).unwrap();
             steps.remove(pos);
         }
-        None => ()
+        None => (),
     }
 
     next
