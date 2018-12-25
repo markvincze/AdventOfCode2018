@@ -1,0 +1,38 @@
+START: addi 3 16 3 // GOTO JUMP1
+START2: seti 1 2 1 // reg[1] = 1
+START3: seti 1 1 2 // reg[2] = 1
+START4: mulr 1 2 5 // reg[5] = reg[1] * reg[2]
+eqrr 5 4 5         // reg[5] = reg[4] == reg[5]
+addr 5 3 3         // reg[3] += reg[5]
+addi 3 1 3         // reg[3] += 1
+addr 1 0 0         // reg[0] += reg[1]
+addi 2 1 2         // reg[2] += 1
+gtrr 2 4 5         // reg[5] = reg[2] > reg[4]
+addr 3 5 3         // reg[3] += reg[5]
+seti 2 3 3         // reg[3] = 2, GOTO START4
+addi 1 1 1         // reg[1] += 1
+gtrr 1 4 5         // reg[5] = reg[1] > reg[4]
+addr 5 3 3         // reg[3] += reg[5]
+seti 1 6 3         // reg[3] = 1, GOTO START3
+mulr 3 3 3         // reg[3] *= reg[3]
+JUMP1: addi 4 2 4  // reg[4] += 2
+mulr 4 4 4         // reg[4] *= reg[4]
+mulr 3 4 4         // reg[4] *= reg[3]
+muli 4 11 4        // reg[4] *= 11
+addi 5 5 5         // reg[5] += 5
+mulr 5 3 5         // reg[5] *= reg[3]
+addi 5 15 5        // reg[5] += 15
+addr 4 5 4         // reg[4] += reg[5]
+addr 3 0 3         // reg[3] += reg[0], GOTO ?
+seti 0 6 3         // reg[3] = 0, GOTO START2
+setr 3 5 5         
+mulr 5 3 5         
+addr 3 5 5         
+mulr 3 5 5         
+muli 5 14 5        
+mulr 5 3 5         
+addr 4 5 4         
+seti 0 5 0         // reg[0] = 0
+seti 0 1 3         // reg[3] = 0, GOTO START2
+
+After initialization: (1, [|0L; 0L; 0L; 0L; 10551361L; 10550400L|])
