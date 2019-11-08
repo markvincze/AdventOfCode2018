@@ -24,3 +24,21 @@ if r1 <= r4
 
 END!
 
+
+var r1 = 0;
+var limit = 10551361;
+
+for(r1 = 1; r2 <= limit; r2++)
+{
+    Console.WriteLine("R1: {0}, R0: {0}", r1, r0);
+    for(r2 = 1; r2 <= limit; r2++)
+    {
+        if(limit == r1 * r2)
+        {
+            r0 += r1;
+        }
+    }
+}
+
+
+
