@@ -127,42 +127,43 @@ let rec discover shortestDistancesCache queue (minDistInQueue : int) (distToTarg
              else let fromRegionType = geoIndex geoIndices (x, y) |> erosionLevel |> regionType
                   let stepRegionType = geoIndex geoIndices (sx, sy) |> erosionLevel |> regionType
                   let shortestDistances = Map.find (x, y) shortestDistancesCache
-                  let stepShortestDistances = Map.tryFind position shortestDistancesCache
 
-                  let fromDists = allowedEquipments fromRegionType
-                                  |> List.map (fun eq -> (eq, shortest eq shortestDistances))
+                  let fromAllowed = allowedEquipments fromRegionType
+                  let fromDists = fromAllowed
+                                  |> List.map (fun eq -> (eq, shortest eq shortestDistances |> Option.get))
                                   |> Map.ofList
 
-                  let from = [ ClimbingGear; Torch ]
-                  let where = [ ClimbingGear; Neither ]
-                  let where = [ Torch; Neither ]
+                  let stepAllowed = allowedEquipments stepRegionType
+                  let stepDists = stepAllowed
+                                  |> List.map (fun eq -> match Map.tryFind eq fromDists with
+                                                         | Some d -> eq, min (d + 1) ((Map.find ((List.filter (fun e -> e <> eq) fromAllowed) |> List.head) fromDists) + 8)
+                                                         | None -> eq, min ((Map.find ((List.filter (fun e -> List.contains e stepAllowed) fromAllowed) |> List.head) fromDists) + 8) ((Map.find ((List.filter (fun e -> not (List.contains e stepAllowed)) fromAllowed) |> List.head) fromDists) + 15))
+                                  |> Map.ofList
 
-                  let climbingGear = match shortestDistances.WithClimbingGear with
-                                     | Some v -> v + 1
-                                     | None -> (min (Option.get shortestDistances.WithTorch) (Option.get shortestDistances.WithNeither)) + 7 + 1
-                  let torch = match shortestDistances.WithTorch with
-                              | Some v -> v + 1
-                              | None -> (min (Option.get shortestDistances.WithClimbingGear) (Option.get shortestDistances.WithNeither)) + 7 + 1
-                  let neither = match shortestDistances.WithNeither with
-                                | Some v -> v + 1
-                                | None -> (min (Option.get shortestDistances.WithClimbingGear) (Option.get shortestDistances.WithTorch)) + 7 + 1
+                  let stepShortestDistances = Map.tryFind position shortestDistancesCache
                   let newShortestDistances =
                       match stepRegionType with
-                      | Rocky -> match stepShortestDistances with
+                      | Rocky -> let climbingGear = (Map.find ClimbingGear stepDists)
+                                 let torch = (Map.find Torch stepDists)
+                                 match stepShortestDistances with
                                  | None -> Some { WithNeither = None; WithClimbingGear = Some climbingGear; WithTorch = Some torch }
                                  | Some sd -> if (Option.get sd.WithClimbingGear) <= climbingGear && (Option.get sd.WithTorch) <= torch
                                               then None
                                               else Some { WithNeither = None;
                                                           WithClimbingGear = Some (min (Option.get sd.WithClimbingGear) climbingGear);
                                                           WithTorch = Some (min (Option.get sd.WithTorch) torch) }
-                      | Wet -> match stepShortestDistances with
+                      | Wet -> let climbingGear = (Map.find ClimbingGear stepDists)
+                               let neither = (Map.find Neither stepDists)
+                               match stepShortestDistances with
                                | None -> Some { WithNeither = Some neither; WithClimbingGear = Some climbingGear; WithTorch = None }
                                | Some sd -> if (Option.get sd.WithClimbingGear) <= climbingGear && (Option.get sd.WithNeither) <= neither
                                             then None
                                             else Some { WithNeither = Some (min (Option.get sd.WithNeither) neither);
                                                         WithClimbingGear = Some (min (Option.get sd.WithClimbingGear) climbingGear);
                                                         WithTorch = None }
-                      | Narrow -> match stepShortestDistances with
+                      | Narrow -> let torch = (Map.find Torch stepDists)
+                                  let neither = (Map.find Neither stepDists)
+                                  match stepShortestDistances with
                                   | None -> Some { WithNeither = Some neither; WithClimbingGear = None; WithTorch = Some torch }
                                   | Some sd -> if (Option.get sd.WithTorch) <= torch && (Option.get sd.WithNeither) <= neither
                                                then None
@@ -187,30 +188,6 @@ let rec discover shortestDistancesCache queue (minDistInQueue : int) (distToTarg
          let queue, shortestDistancesCache, minDistInQueue, distToTarget = step queue shortestDistancesCache (x, y+1) minDistInQueue distToTarget
          let queue, shortestDistancesCache, minDistInQueue, distToTarget = step queue shortestDistancesCache (x-1, y) minDistInQueue distToTarget
          let queue, shortestDistancesCache, minDistInQueue, distToTarget = step queue shortestDistancesCache (x, y-1) minDistInQueue distToTarget
-
-        //  match distToTarget with
-        //  | None -> ()
-        //  | Some d -> if d <= minDistInQueue
-        //              then printfn "Shortest to target: %A, in q: %A" d minDistInQueue
-        //                   failwith "alma"
-        //              else ()
-        //  match distToTarget with
-        //  | None -> ()
-        //  | Some d -> let minDistInQueue = if queue = emptyQueue
-        //                                   then 0
-        //                                   else allItems queue
-        //                                        |> Seq.map ((fun p -> Map.find p shortestDistancesCache) >> getMin)
-        //                                        |> Seq.min
-        //              printfn "distToTarget: %d, minDistInQueue: %d" d minDistInQueue
-        //              if d <= minDistInQueue
-        //              then printfn "Shortest to target: %A, Min dist in queue: %d" d minDistInQueue
-        //                   failwith "alma"
-        //              else ()
-
-        //  if (x, y) = target && (Option.get shortestDistances.WithTorch) <= minDist
-        //  then printfn "Shortest to target: %A" shortestDistances
-        //       failwith "alma"
-        //  else ()
 
          discover shortestDistancesCache queue minDistInQueue distToTarget
 

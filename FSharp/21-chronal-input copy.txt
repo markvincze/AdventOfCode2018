@@ -1,0 +1,54 @@
+#ip 1
+seti 123 0 3 // 123 -> reg3
+bani 3 456 3 // reg3 & 456 -> reg3 (reg3 will be 72)
+eqri 3 72 3  // reg3 == 72 -> reg3
+addr 3 1 1   // reg3 + reg1 -> reg1
+seti 0 0 1   // 0 -> reg1
+seti 0 9 3   // 0 -> reg3
+bori 3 65536 5 // reg3 | 65536 -> reg5
+seti 15028787 4 3 // 15028787 -> reg3
+bani 5 255 2 // reg5 & 255 -> reg2
+addr 3 2 3
+bani 3 16777215 3
+muli 3 65899 3
+bani 3 16777215 3
+gtir 256 5 2
+addr 2 1 1
+addi 1 1 1
+seti 27 3 1
+seti 0 9 2
+addi 2 1 4
+muli 4 256 4
+gtrr 4 5 4
+addr 4 1 1
+addi 1 1 1
+seti 25 1 1
+addi 2 1 2
+seti 17 8 1
+setr 2 4 5
+seti 7 3 1
+eqrr 3 0 2
+addr 2 1 1
+seti 5 3 1
+
+while (true) {
+    r5 = r3 | 65536; // LABEL 6
+    r3 = 15028787;
+
+    while (true) {
+        r3 = r3 + (r5 & 255);
+        r3 = r3 & 16777215; // 1111.1111.1111.1111.1111.1111
+        r3 = r3 * 65899;
+        r3 = r3 & 16777215;
+
+        if r5 < 256 {
+            break;
+        }
+
+        r5 = r5 / 256;
+    }
+
+    if r3 = r0 {  // LABEL 28
+        break;
+    }
+}
