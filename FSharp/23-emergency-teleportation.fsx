@@ -78,16 +78,16 @@ let furthest x (x1, x2) =
     then x2
     else x1
 
-let closestPoint octantLoc bot =
-    let botX, botY, botZ = bot.Position
+let closestPoint octantLoc position =
+    let botX, botY, botZ = position
     let cornerX, cornerY, cornerZ = octantLoc.Corner
     let widthX, widthY, widthZ = octantLoc.Width
     (closest botX (cornerX, (cornerX + widthX)),
      closest botY (cornerY, (cornerY + widthY)),
      closest botZ (cornerZ, (cornerZ + widthZ)))
 
-let furthestPoint octantLoc bot =
-    let botX, botY, botZ = bot.Position
+let furthestPoint octantLoc position =
+    let botX, botY, botZ = position
     let cornerX, cornerY, cornerZ = octantLoc.Corner
     let widthX, widthY, widthZ = octantLoc.Width
     (furthest botX (cornerX, (cornerX + widthX)),
@@ -104,7 +104,7 @@ let botsInside octant bots =
 
 let botsInRange octantLocation bots =
     bots
-    |> Array.filter (fun b -> (dist (closestPoint octantLocation b) b.Position) <= b.Range)
+    |> Array.filter (fun b -> (dist (closestPoint octantLocation b.Position) b.Position) <= b.Range)
     |> Array.length
 
 let createOctant bots octantLocation =
@@ -145,33 +145,36 @@ let split octantLoc =
 let isLeaf bots octant =
     bots
     |> Array.forall (fun b -> 
-                        let c = closestPoint octant.Location b
-                        let f = furthestPoint octant.Location b
+                        let c = closestPoint octant.Location b.Position
+                        let f = furthestPoint octant.Location b.Position
                         let i1 = isInRange c b
                         let i2 = isInRange f b
                         i1 && i2 || not i1 && not i2)
 
-let queue = [fullOctant]
+let distFromOctant octantLoc =
+    dist (0, 0, 0) (closestPoint octantLoc (0, 0, 0))
 
 let rec findSolution queue (solution : Octant option) =
-    // match solution with
-    // | None -> printfn "No solution yet"
-    // | Some s -> printfn "Current solution: %A" s
     match queue with
     | [] -> solution
     | h :: t -> if isLeaf bots h
                 then let newSolution = match solution with
                                        | None -> Some h
                                        | Some o when (botsInRange h.Location bots) > o.InRangeCount -> Some h
+                                       | Some o when (botsInRange h.Location bots) = o.InRangeCount && (distFromOctant h.Location) < (distFromOctant o.Location) -> Some h
                                        | _ -> solution
                      findSolution t newSolution
-                else let splits = split h.Location |> List.map (createOctant bots)
-                    //  printfn "Splitting cube. Queue size: %d, Queue: %A" (List.length queue) (List.take (min 5 (List.length queue)) queue)
-                     let queue = List.append t splits
-                     let queue = match solution with
-                                 | None -> queue
-                                 | Some s -> queue |> List.filter (fun o -> o.InRangeCount > s.InRangeCount)
-                     findSolution queue solution
+                else if Option.isNone solution || botsInRange h.Location bots > (Option.get solution).InRangeCount ||
+                        (botsInRange h.Location bots = (Option.get solution).InRangeCount && (distFromOctant h.Location) < (distFromOctant (Option.get solution).Location))
+                     then let splits = split h.Location |> List.map (createOctant bots)
+                          let queue = List.append t splits
+                                      |> List.sortByDescending (fun o -> o.InRangeCount)
+                          findSolution queue solution
+                     else findSolution t solution
 
+let queue = [fullOctant]
 
+let bestOctant = findSolution queue None
+
+let result2 = distFromOctant (Option.get bestOctant).Location
 
