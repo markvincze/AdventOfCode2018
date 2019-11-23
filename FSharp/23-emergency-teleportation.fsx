@@ -149,7 +149,7 @@ let isLeaf bots octant =
                         let f = furthestPoint octant.Location b.Position
                         let i1 = isInRange c b
                         let i2 = isInRange f b
-                        i1 && i2 || not i1 && not i2)
+                        (i1 && i2) || (not i1 && not i2))
 
 let distFromOctant octantLoc =
     dist (0, 0, 0) (closestPoint octantLoc (0, 0, 0))
@@ -164,8 +164,7 @@ let rec findSolution queue (solution : Octant option) =
                                        | Some o when (botsInRange h.Location bots) = o.InRangeCount && (distFromOctant h.Location) < (distFromOctant o.Location) -> Some h
                                        | _ -> solution
                      findSolution t newSolution
-                else if Option.isNone solution || botsInRange h.Location bots > (Option.get solution).InRangeCount ||
-                        (botsInRange h.Location bots = (Option.get solution).InRangeCount && (distFromOctant h.Location) < (distFromOctant (Option.get solution).Location))
+                else if Option.isNone solution || botsInRange h.Location bots > (Option.get solution).InRangeCount
                      then let splits = split h.Location |> List.map (createOctant bots)
                           let queue = List.append t splits
                                       |> List.sortByDescending (fun o -> o.InRangeCount)
