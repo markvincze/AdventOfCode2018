@@ -68,46 +68,58 @@ let isInside octant (x, y, z) =
     z >= cz && z <= cz + wz
 
 let closest x (x1, x2) =
-    if x < x1 
-    then x1
-    else if x > x2
-         then x2
-         else x
+    if x < x1 then x1
+    elif x > x2 then x2
+    else x
+
+let furthest x (x1, x2) =
+    let h = (x2 - x1) / 2
+    if x <= x1 + h
+    then x2
+    else x1
 
 let closestPoint octantLoc bot =
     let botX, botY, botZ = bot.Position
-    let cornerX, cornerY, cornerZ = bot.Position
-    let widthX, widthY, widthZ = bot.Position
+    let cornerX, cornerY, cornerZ = octantLoc.Corner
+    let widthX, widthY, widthZ = octantLoc.Width
     (closest botX (cornerX, (cornerX + widthX)),
      closest botY (cornerY, (cornerY + widthY)),
      closest botZ (cornerZ, (cornerZ + widthZ)))
 
-let isInRange octantLoc bot =
-    (dist (closestPoint octantLoc bot) bot.Position) <= bot.Range
+let furthestPoint octantLoc bot =
+    let botX, botY, botZ = bot.Position
+    let cornerX, cornerY, cornerZ = octantLoc.Corner
+    let widthX, widthY, widthZ = octantLoc.Width
+    (furthest botX (cornerX, (cornerX + widthX)),
+     furthest botY (cornerY, (cornerY + widthY)),
+     furthest botZ (cornerZ, (cornerZ + widthZ)))
+
+let isInRange point bot =
+    (dist point bot.Position) <= bot.Range
 
 let botsInside octant bots =
     bots
-    |> Array.map (fun b -> b.Position)
-    |> Array.filter (isInside octant)
+    |> Array.filter (fun b -> isInside octant b.Position)
     |> Array.length
 
-let botsInRange octant bots =
+let botsInRange octantLocation bots =
     bots
-    |> Array.filter (isInRange octant)
+    |> Array.filter (fun b -> (dist (closestPoint octantLocation b) b.Position) <= b.Range)
     |> Array.length
 
-let octant corner width bots =
-    let octantLocation = {
-        Corner = corner
-        Width = width
-    }
+let createOctant bots octantLocation =
     {
         Location = octantLocation
         InsideCount = botsInside octantLocation bots
         InRangeCount = botsInRange octantLocation bots
     }
 
-let fullOctant = octant (minX, minY, minZ) (width, height, depth) bots
+let fullOctantLocation = {
+    Corner = (minX, minY, minZ)
+    Width = (width, height, depth)
+}
+
+let fullOctant = createOctant bots fullOctantLocation
 
 let split octantLoc =
     let cx, cy, cz = octantLoc.Corner
@@ -129,3 +141,37 @@ let split octantLoc =
         { Corner = (cx, cy + widthYHalf1, cz + widthZHalf1); Width = (widthXHalf1, widthYHalf2, widthZHalf2) }
         { Corner = (cx + widthXHalf1, cy + widthYHalf1, cz + widthZHalf1); Width = (widthXHalf2, widthYHalf2, widthZHalf2) }
     ]
+
+let isLeaf bots octant =
+    bots
+    |> Array.forall (fun b -> 
+                        let c = closestPoint octant.Location b
+                        let f = furthestPoint octant.Location b
+                        let i1 = isInRange c b
+                        let i2 = isInRange f b
+                        i1 && i2 || not i1 && not i2)
+
+let queue = [fullOctant]
+
+let rec findSolution queue (solution : Octant option) =
+    // match solution with
+    // | None -> printfn "No solution yet"
+    // | Some s -> printfn "Current solution: %A" s
+    match queue with
+    | [] -> solution
+    | h :: t -> if isLeaf bots h
+                then let newSolution = match solution with
+                                       | None -> Some h
+                                       | Some o when (botsInRange h.Location bots) > o.InRangeCount -> Some h
+                                       | _ -> solution
+                     findSolution t newSolution
+                else let splits = split h.Location |> List.map (createOctant bots)
+                    //  printfn "Splitting cube. Queue size: %d, Queue: %A" (List.length queue) (List.take (min 5 (List.length queue)) queue)
+                     let queue = List.append t splits
+                     let queue = match solution with
+                                 | None -> queue
+                                 | Some s -> queue |> List.filter (fun o -> o.InRangeCount > s.InRangeCount)
+                     findSolution queue solution
+
+
+
